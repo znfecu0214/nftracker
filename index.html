@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大海战数据统计</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            margin: 20px 0;
+            position: relative;
+            height: 400px;
+        }
+        hr {
+            border: 2px solid #ccc;
+            margin: 30px 0;
+        }
+        .error-message {
+            color: red;
+            text-align: center;
+            padding: 20px;
+            background-color: #ffe6e6;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center; color: black;">海战活跃度追踪</h1>
+        
+        <div class="loading" id="loading">正在加载数据...</div>
+        
+        <div class="chart-container">
+            <canvas id="activityChart"></canvas>
+        </div>
+        
+        <hr>
+        
+        <div class="chart-container">
+            <canvas id="battleChart"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        // CSV parsing function
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(',');
+            const data = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',');
+                if (values.length === headers.length && values[0] && values[1]) {
+                    const item = {};
+                    headers.forEach((header, index) => {
+                        item[header.trim()] = values[index].trim();
+                    });
+                    data.push(item);
+                }
+            }
+            return data;
+        }
+
+        // Replace these URLs with your actual Oracle Cloud CSV file URLs
+        const CSV_URLS = {
+            activity: 'https://objectstorage.ap-osaka-1.oraclecloud.com/n/axfishw4p7q2/b/game-activity/o/server_activity.csv',      // Replace with your actual URL
+            core: 'https://objectstorage.ap-osaka-1.oraclecloud.com/n/axfishw4p7q2/b/game-activity/o/server_activity_core.csv',     // Replace with your actual URL
+            battles: 'https://objectstorage.ap-osaka-1.oraclecloud.com/n/axfishw4p7q2/b/game-activity/o/server_battles.csv'         // Replace with your actual URL
+        };
+
+        // Function to load CSV data
+        async function loadCSVData(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const text = await response.text();
+                return parseCSV(text);
+            } catch (error) {
+                console.error('Error loading CSV:', error);
+                return null;
+            }
+        }
+
+        // Main function to create charts
+        async function createCharts() {
+            const loadingElement = document.getElementById('loading');
+            
+            try {
+                // Replace these URLs with your actual Oracle Cloud CSV URLs
+                const CSV_URLS = {
+                    activity: 'https://objectstorage.ap-osaka-1.oraclecloud.com/n/axfishw4p7q2/b/game-activity/o/server_activity.csv',      // Replace with your actual URL
+                    core: 'https://objectstorage.ap-osaka-1.oraclecloud.com/n/axfishw4p7q2/b/game-activity/o/server_activity_core.csv',     // Replace with your actual URL
+                    battles: 'https://objectstorage.ap-osaka-1.oraclecloud.com/n/axfishw4p7q2/b/game-activity/o/server_battles.csv'         // Replace with your actual URL
+                };
+
+                // Load data from your CSV files
+                const [allData, coreData, battleData] = await Promise.all([
+                    loadCSVData(CSV_URLS.activity),
+                    loadCSVData(CSV_URLS.core),
+                    loadCSVData(CSV_URLS.battles)
+                ]);
+
+                // Check if data was loaded successfully
+                if (!allData || !coreData || !battleData) {
+                    throw new Error('Failed to load one or more CSV files');
+                }
+
+                loadingElement.style.display = 'none';
+
+                // Create activity chart
+                createActivityChart(allData, coreData);
+                
+                // Create battle chart
+                createBattleChart(battleData);
+
+            } catch (error) {
+                console.error('Error creating charts:', error);
+                loadingElement.innerHTML = '<div class="error-message">加载数据时出错，请检查网络连接或数据源</div>';
+            }
+        }
+
+        function createActivityChart(allData, coreData) {
+            const labels = allData.map(row => row["Dates"]);
+            const allCounts = allData.map(row => parseInt(row["Counts"]));
+            const coreCounts = coreData.map(row => parseInt(row["Counts"]));
+            const minY = Math.max((Math.min(...coreCounts) - 200), 0);
+            const maxY = Math.max(...allCounts) + 200;
+
+            new Chart(document.getElementById("activityChart"), {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: "所有账号",
+                            data: allCounts,
+                            borderColor: "green",
+                            backgroundColor: "rgba(0, 128, 0, 0.1)",
+                            yAxisID: "y",
+                            fill: false
+                        },
+                        {
+                            label: "核心账号",
+                            data: coreCounts,
+                            borderColor: "blue",
+                            backgroundColor: "rgba(0, 0, 255, 0.1)",
+                            yAxisID: "y1",
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: "大海战账号周活跃数",
+                            color: "brown",
+                            font: {
+                                family: "Courier New",
+                                size: 16
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: "日期",
+                                color: "brown",
+                                font: { family: "Courier New", size: 16 }
+                            },
+                            ticks: {
+                                color: "brown",
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        },
+                        y: {
+                            type: "linear",
+                            position: "left",
+                            min: minY,
+                            max: maxY,
+                            title: {
+                                display: true,
+                                text: "账号总数",
+                                color: "green",
+                                font: { family: "Courier New", size: 16 }
+                            },
+                            ticks: {
+                                color: "green"
+                            }
+                        },
+                        y1: {
+                            type: "linear",
+                            position: "right",
+                            min: minY,
+                            max: maxY,
+                            title: {
+                                display: true,
+                                text: "账号总数",
+                                color: "blue",
+                                font: { family: "Courier New", size: 16 }
+                            },
+                            ticks: {
+                                color: "blue"
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createBattleChart(battleData) {
+            const labels = battleData.map(row => row["Dates"]);
+            const values = battleData.map(row => parseInt(row["Battles"]));
+            
+            const minBattleY = 0;
+            const maxBattleY = Math.max(...values) + 50;
+            
+            new Chart(document.getElementById("battleChart"), {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Battle Count",
+                        data: values,
+                        borderColor: "red",
+                        backgroundColor: "rgba(255, 0, 0, 0.1)",
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: "大海战日均场次变化图",
+                            color: "brown",
+                            font: {
+                                family: "Courier New",
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: "日期",
+                                color: "darkblue",
+                                font: { family: "Courier New", size: 16 }
+                            },
+                            ticks: {
+                                color: "darkblue",
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        },
+                        y: {
+                            type: "linear",
+                            position: "left",
+                            min: minBattleY,
+                            max: maxBattleY,
+                            title: {
+                                display: true,
+                                text: "日均场次",
+                                color: "red",
+                                font: { family: "Courier New", size: 16 }
+                            },
+                            ticks: {
+                                color: "red"
+                            }
+                        },
+                        y1: {
+                            type: "linear",
+                            position: "right",
+                            min: minBattleY,
+                            max: maxBattleY,
+                            title: {
+                                display: true,
+                                text: "日均场次",
+                                color: "red",
+                                font: { family: "Courier New", size: 16 }
+                            },
+                            ticks: {
+                                color: "red"
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize charts when page loads
+        document.addEventListener('DOMContentLoaded', createCharts);
+    </script>
+<!-- Footer -->
+<footer style="text-align: center; font-family: 'Courier New'; color: gray; margin-top: 40px;">
+  Copyright © <span id="year"></span> by 老树
+</footer>
+<script>
+  document.getElementById("year").textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
