@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏活动数据查看器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            padding: 25px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        select, input {
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        select {
+            min-width: 200px;
+            cursor: pointer;
+        }
+
+        input[type="text"] {
+            min-width: 250px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-size: 16px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            padding: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 15px 10px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        th:hover {
+            background: #5568d3;
+        }
+
+        th.sortable::after {
+            content: ' ⇅';
+            opacity: 0.5;
+        }
+
+        th.sort-asc::after {
+            content: ' ↑';
+            opacity: 1;
+        }
+
+        th.sort-desc::after {
+            content: ' ↓';
+            opacity: 1;
+        }
+
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        tr:nth-child(even):hover {
+            background: #e9ecef;
+        }
+
+        .info {
+            padding: 15px 30px;
+            background: #e7f3ff;
+            color: #004085;
+            font-size: 14px;
+        }
+
+        .error {
+            padding: 20px 30px;
+            background: #f8d7da;
+            color: #721c24;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 游戏活动数据查看器</h1>
+            <p>Game Activity Data Viewer</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="yearSelect">选择年份:</label>
+                <select id="yearSelect">
+                    <option value="">-- 请选择 --</option>
+                    <option value="2023">2023年度总结</option>
+                    <option value="2024">2024年度总结</option>
+                    <option value="2025">2025年度总结</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="filterInput">筛选:</label>
+                <input type="text" id="filterInput" placeholder="输入关键词筛选数据...">
+            </div>
+
+            <button id="clearBtn">清除筛选</button>
+        </div>
+
+        <div id="info" class="info" style="display: none;"></div>
+        <div id="content">
+            <div class="loading">请选择一个年份查看数据</div>
+        </div>
+    </div>
+
+    <script>
+        const baseUrl = 'https://objectstorage.ap-osaka-1.oraclecloud.com/n/axfishw4p7q2/b/game-activity/o/';
+        let currentData = [];
+        let filteredData = [];
+        let sortColumn = -1;
+        let sortAsc = true;
+
+        const yearSelect = document.getElementById('yearSelect');
+        const filterInput = document.getElementById('filterInput');
+        const clearBtn = document.getElementById('clearBtn');
+        const content = document.getElementById('content');
+        const info = document.getElementById('info');
+
+        yearSelect.addEventListener('change', loadData);
+        filterInput.addEventListener('input', filterData);
+        clearBtn.addEventListener('click', clearFilter);
+
+        function loadData() {
+            const year = yearSelect.value;
+            if (!year) {
+                content.innerHTML = '<div class="loading">请选择一个年份查看数据</div>';
+                info.style.display = 'none';
+                return;
+            }
+
+            content.innerHTML = '<div class="loading">正在加载数据...</div>';
+            info.style.display = 'none';
+
+            const url = `${baseUrl}chnb_annual_summary_${year}.csv`;
+
+            Papa.parse(url, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    currentData = results.data;
+                    filteredData = [...currentData];
+                    sortColumn = -1;
+                    sortAsc = true;
+                    displayTable();
+                },
+                error: function(error) {
+                    content.innerHTML = `<div class="error">加载失败: ${error.message}</div>`;
+                }
+            });
+        }
+
+        function filterData() {
+            const keyword = filterInput.value.toLowerCase().trim();
+            
+            if (!keyword) {
+                filteredData = [...currentData];
+            } else {
+                filteredData = currentData.filter(row => {
+                    return Object.values(row).some(val => 
+                        String(val).toLowerCase().includes(keyword)
+                    );
+                });
+            }
+            
+            displayTable();
+        }
+
+        function clearFilter() {
+            filterInput.value = '';
+            filteredData = [...currentData];
+            displayTable();
+        }
+
+        function sortTable(colIndex, headers) {
+            if (sortColumn === colIndex) {
+                sortAsc = !sortAsc;
+            } else {
+                sortColumn = colIndex;
+                sortAsc = true;
+            }
+
+            const header = headers[colIndex];
+            
+            filteredData.sort((a, b) => {
+                let valA = a[header] || '';
+                let valB = b[header] || '';
+
+                const numA = parseFloat(valA);
+                const numB = parseFloat(valB);
+
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return sortAsc ? numA - numB : numB - numA;
+                }
+
+                valA = String(valA).toLowerCase();
+                valB = String(valB).toLowerCase();
+
+                if (valA < valB) return sortAsc ? -1 : 1;
+                if (valA > valB) return sortAsc ? 1 : -1;
+                return 0;
+            });
+
+            displayTable();
+        }
+
+        function displayTable() {
+            if (filteredData.length === 0) {
+                content.innerHTML = '<div class="loading">没有找到匹配的数据</div>';
+                info.style.display = 'none';
+                return;
+            }
+
+            const headers = Object.keys(filteredData[0]);
+            
+            let html = '<div class="table-container"><table><thead><tr>';
+            headers.forEach((header, idx) => {
+                let sortClass = 'sortable';
+                if (sortColumn === idx) {
+                    sortClass += sortAsc ? ' sort-asc' : ' sort-desc';
+                }
+                html += `<th class="${sortClass}" onclick="sortTable(${idx}, ${JSON.stringify(headers).replace(/"/g, '&quot;')})">${header}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            filteredData.forEach(row => {
+                html += '<tr>';
+                headers.forEach(header => {
+                    html += `<td>${row[header] || ''}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+            content.innerHTML = html;
+
+            info.textContent = `显示 ${filteredData.length} 条数据（共 ${currentData.length} 条）`;
+            info.style.display = 'block';
+        }
+
+        function sortTable(colIndex, headers) {
+            if (sortColumn === colIndex) {
+                sortAsc = !sortAsc;
+            } else {
+                sortColumn = colIndex;
+                sortAsc = true;
+            }
+
+            const header = headers[colIndex];
+            
+            filteredData.sort((a, b) => {
+                let valA = a[header] || '';
+                let valB = b[header] || '';
+
+                const numA = parseFloat(valA);
+                const numB = parseFloat(valB);
+
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return sortAsc ? numA - numB : numB - numA;
+                }
+
+                valA = String(valA).toLowerCase();
+                valB = String(valB).toLowerCase();
+
+                if (valA < valB) return sortAsc ? -1 : 1;
+                if (valA > valB) return sortAsc ? 1 : -1;
+                return 0;
+            });
+
+            displayTable();
+        }
+    </script>
+	<footer style="text-align: center; font-family: 'Courier New'; color: white; margin-top: 40px;">
+	  Copyright © <span id="year"></span> by 老树
+	</footer>
+	<script>
+	  document.getElementById("year").textContent = new Date().getFullYear();
+	</script>
+</body>
+</html>
