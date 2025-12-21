@@ -290,7 +290,7 @@
             <a href="activities.html" class="card">
                 <div class="icon">📊</div>
                 <h2>玩家活跃度追踪</h2>
-                <p>查看周活跃账号数据和场次分析图表</p>
+                <p>查看周活跃账号数和日均场次变化趋势</p>
                 <p style="font-size: 14px; color: #a0aec0;">View real-time activity data and trend charts</p>
                 <span class="badge">Activity Charts</span>
             </a>
@@ -305,8 +305,14 @@
         </div>
 
         <div class="footer">
-            <p>© 2025 Game Data Hub | 选择一个选项开始探索</p>
+            <p id="copyright"></p>
         </div>
     </div>
+
+    <script>
+        // Set dynamic copyright year
+        document.getElementById('copyright').textContent = 
+            `© ${new Date().getFullYear()} Game Data Hub | 选择一个选项开始探索`;
+    </script>
 </body>
 </html>
