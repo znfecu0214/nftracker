@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>舰队历史查询</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding-top: 20px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .back-button {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-5px);
+        }
+
+        .search-box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+
+        .search-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        #playerIdInput {
+            flex: 1;
+            padding: 15px 20px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        #playerIdInput:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        #searchBtn {
+            padding: 15px 40px;
+            font-size: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #searchBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        #searchBtn:active {
+            transform: translateY(0);
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 18px;
+            padding: 20px;
+            display: none;
+        }
+
+        .result-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: none;
+        }
+
+        .no-result {
+            text-align: center;
+            padding: 40px;
+            font-size: 24px;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .result-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .result-header h2 {
+            color: #667eea;
+            font-size: 1.8em;
+        }
+
+        .result-info {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .fleet-name {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .back-button {
+                position: static;
+                display: inline-block;
+                margin-bottom: 15px;
+            }
+
+            .search-input-group {
+                flex-direction: column;
+            }
+
+            #searchBtn {
+                width: 100%;
+            }
+
+            table {
+                font-size: 14px;
+            }
+
+            th, td {
+                padding: 10px 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-button">← 返回首页</a>
+            <h1>⚓ 舰队历史查询系统</h1>
+            <p>Fleet History Lookup</p>
+        </div>
+
+        <div class="search-box">
+            <div class="search-input-group">
+                <input type="text" id="playerIdInput" placeholder="请输入玩家ID..." />
+                <button id="searchBtn" onclick="searchPlayer()">🔍 查询</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">正在加载数据...</div>
+
+        <div class="result-container" id="resultContainer">
+            <div id="resultContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let fleetData = [];
+        const csvUrl = 'https://objectstorage.ap-osaka-1.oraclecloud.com/n/axfishw4p7q2/b/game-activity/o/all_players_fleet_history.csv';
+
+        // Load CSV data on page load
+        window.addEventListener('load', async () => {
+            document.getElementById('loading').style.display = 'block';
+            try {
+                const response = await fetch(csvUrl);
+                const csvText = await response.text();
+                fleetData = parseCSV(csvText);
+                document.getElementById('loading').style.display = 'none';
+            } catch (error) {
+                document.getElementById('loading').innerHTML = '❌ 数据加载失败，请刷新页面重试';
+                console.error('Error loading CSV:', error);
+            }
+        });
+
+        // Parse CSV
+        function parseCSV(csv) {
+            const lines = csv.trim().split('\n');
+            const headers = lines[0].split(',');
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',');
+                const obj = {};
+                headers.forEach((header, index) => {
+                    obj[header.trim()] = values[index] ? values[index].trim() : '';
+                });
+                data.push(obj);
+            }
+            return data;
+        }
+
+        // Search player
+        function searchPlayer() {
+            const playerId = document.getElementById('playerIdInput').value.trim();
+            
+            if (!playerId) {
+                alert('请输入玩家ID');
+                return;
+            }
+
+            const results = fleetData.filter(record => record['账号'] === playerId);
+            
+            const resultContainer = document.getElementById('resultContainer');
+            const resultContent = document.getElementById('resultContent');
+
+            if (results.length === 0) {
+                resultContent.innerHTML = '<div class="no-result">❌ 用户不存在</div>';
+                resultContainer.style.display = 'block';
+                return;
+            }
+
+            // Display results
+            let html = `
+                <div class="result-header">
+                    <h2>玩家: ${playerId}</h2>
+                    <div class="result-info">共找到 ${results.length} 条记录</div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>舰队</th>
+                            <th>小队</th>
+                            <th>加入日期</th>
+                            <th>退出日期</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            results.forEach(record => {
+                html += `
+                    <tr>
+                        <td class="fleet-name">${record['舰队']}</td>
+                        <td>${record['小队']}</td>
+                        <td>${record['加入日期']}</td>
+                        <td>${record['退出日期']}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            resultContent.innerHTML = html;
+            resultContainer.style.display = 'block';
+        }
+
+        // Allow Enter key to search
+        document.getElementById('playerIdInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchPlayer();
+            }
+        });
+    </script>
+	<footer style="text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; margin-top: 40px;">
+	  Copyright © <span id="year"></span> by 老树
+	</footer>
+	<script>
+	  document.getElementById("year").textContent = new Date().getFullYear();
+	</script>
+</body>
+</html>
