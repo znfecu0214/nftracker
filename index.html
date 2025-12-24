@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大海战数据中心 | Game Data Hub</title>
+    <title>大海战游戏数据中心 | Game Data Hub</title>
     <style>
         * {
             margin: 0;
@@ -85,7 +85,7 @@
             position: relative;
             z-index: 1;
             text-align: center;
-            max-width: 800px;
+            max-width: 1000px;
             width: 100%;
         }
 
@@ -111,7 +111,7 @@
 
         .buttons-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 30px;
             padding: 0 20px;
         }
@@ -154,7 +154,11 @@
         }
 
         .card:nth-child(2) {
-            animation: fadeInRight 1s ease-out 0.3s both;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+
+        .card:nth-child(3) {
+            animation: fadeInRight 1s ease-out 0.5s both;
         }
 
         .icon {
@@ -201,6 +205,11 @@
             color: white;
         }
 
+        .card:nth-child(3) .badge {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
         @keyframes fadeInDown {
             from {
                 opacity: 0;
@@ -234,22 +243,22 @@
             }
         }
 
-        .footer {
-            margin-top: 50px;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 14px;
-            animation: fadeInUp 1s ease-out 0.6s both;
-        }
-
         @keyframes fadeInUp {
             from {
                 opacity: 0;
-                transform: translateY(30px);
+                transform: translateY(50px);
             }
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
+        }
+
+        .footer {
+            margin-top: 50px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            animation: fadeInUp 1s ease-out 0.8s both;
         }
 
         @media (max-width: 768px) {
@@ -289,17 +298,25 @@
             <a href="activities.html" class="card">
                 <div class="icon">📊</div>
                 <h2>玩家活跃度追踪</h2>
-                <p>查看周活跃账号数和日均场次变化趋势</p>
-                <p style="font-size: 14px; color: #a0aec0;">View real-time activity data and trend charts</p>
+                <p>周活跃账号数和日均场次变化趋势</p>
+                <p style="font-size: 14px; color: #a0aec0;">Activity data and trend charts</p>
                 <span class="badge">Activity Charts</span>
             </a>
 
             <a href="summaries.html" class="card">
                 <div class="icon">📋</div>
-                <h2>舰队年度总结</h2>
+                <h2>兔子舰队年度总结</h2>
                 <p>浏览和分析历年黑白兔的野海表现</p>
-                <p style="font-size: 14px; color: #a0aec0;">Browse and analyze annual summary data</p>
+                <p style="font-size: 14px; color: #a0aec0;">CHNB annual summary data</p>
                 <span class="badge">Annual Summaries</span>
+            </a>
+
+            <a href="chahukou.html" class="card">
+                <div class="icon">⚓</div>
+                <h2>舰队历史查询</h2>
+                <p>查询玩家的舰队历史记录</p>
+                <p style="font-size: 14px; color: #a0aec0;">Player fleet history records</p>
+                <span class="badge">Fleet History</span>
             </a>
         </div>
 
