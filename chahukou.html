@@ -29,32 +29,12 @@
             color: white;
             margin-bottom: 40px;
             padding-top: 20px;
-            position: relative;
         }
 
         .header h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .back-button {
-            position: absolute;
-            top: 0;
-            left: 0;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 14px;
-            transition: all 0.3s;
-            backdrop-filter: blur(10px);
-        }
-
-        .back-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateX(-5px);
         }
 
         .search-box {
@@ -184,12 +164,6 @@
                 font-size: 1.8em;
             }
 
-            .back-button {
-                position: static;
-                display: inline-block;
-                margin-bottom: 15px;
-            }
-
             .search-input-group {
                 flex-direction: column;
             }
@@ -211,9 +185,9 @@
 <body>
     <div class="container">
         <div class="header">
-            <a href="index.html" class="back-button">← 返回首页</a>
             <h1>⚓ 舰队历史查询系统</h1>
             <p>Fleet History Lookup</p>
+            <p id="lastUpdate" style="margin-top: 10px; font-size: 14px; opacity: 0.9;"></p>
         </div>
 
         <div class="search-box">
@@ -241,6 +215,23 @@
                 const response = await fetch(csvUrl);
                 const csvText = await response.text();
                 fleetData = parseCSV(csvText);
+                
+                // Get last modified date from response headers
+                const lastModified = response.headers.get('Last-Modified');
+                if (lastModified) {
+                    const date = new Date(lastModified);
+                    const formattedDate = date.toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    });
+                    document.getElementById('lastUpdate').textContent = `数据最后更新: ${formattedDate}`;
+                }
+                
                 document.getElementById('loading').style.display = 'none';
             } catch (error) {
                 document.getElementById('loading').innerHTML = '❌ 数据加载失败，请刷新页面重试';
@@ -326,7 +317,7 @@
             }
         });
     </script>
-	<footer style="text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; margin-top: 40px;">
+	<footer style="text-align: center; font-family: 'Courier New'; color: white; margin-top: 40px;">
 	  Copyright © <span id="year"></span> by 老树
 	</footer>
 	<script>
