@@ -262,9 +262,12 @@
             }
 
             .back-button {
-                position: static;
+                /* FIXED: Changed from 'static' to 'relative' so z-index works */
+                position: relative; 
                 display: inline-block;
                 margin-bottom: 20px;
+                /* Added z-index just to be safe */
+                z-index: 5;
             }
         }
     </style>
