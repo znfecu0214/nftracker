@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-	<link rel="icon" type="image/jpg" href="oldtree.jpg">
+    <link rel="icon" type="image/jpg" href="oldtree.jpg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>兔子历年肝帝排行榜</title>
@@ -325,8 +325,11 @@
                 let valA = a[header] || '';
                 let valB = b[header] || '';
 
-                const numA = parseFloat(valA);
-                const numB = parseFloat(valB);
+                // Remove thousand separators (commas) and try to parse as number
+                const cleanA = String(valA).replace(/,/g, '');
+                const cleanB = String(valB).replace(/,/g, '');
+                const numA = parseFloat(cleanA);
+                const numB = parseFloat(cleanB);
 
                 if (!isNaN(numA) && !isNaN(numB)) {
                     return sortAsc ? numA - numB : numB - numA;
@@ -358,7 +361,7 @@
                 if (sortColumn === idx) {
                     sortClass += sortAsc ? ' sort-asc' : ' sort-desc';
                 }
-                html += `<th class="${sortClass}" onclick="sortTable(${idx}, ${JSON.stringify(headers).replace(/"/g, '&quot;')})">${header}</th>`;
+                html += `<th class="${sortClass}" onclick="sortTableClick(${idx})">${header}</th>`;
             });
             html += '</tr></thead><tbody>';
 
@@ -377,7 +380,8 @@
             info.style.display = 'block';
         }
 
-        function sortTable(colIndex, headers) {
+        function sortTableClick(colIndex) {
+            const headers = Object.keys(filteredData[0]);
             if (sortColumn === colIndex) {
                 sortAsc = !sortAsc;
             } else {
@@ -391,8 +395,11 @@
                 let valA = a[header] || '';
                 let valB = b[header] || '';
 
-                const numA = parseFloat(valA);
-                const numB = parseFloat(valB);
+                // Remove thousand separators (commas) and try to parse as number
+                const cleanA = String(valA).replace(/,/g, '');
+                const cleanB = String(valB).replace(/,/g, '');
+                const numA = parseFloat(cleanA);
+                const numB = parseFloat(cleanB);
 
                 if (!isNaN(numA) && !isNaN(numB)) {
                     return sortAsc ? numA - numB : numB - numA;
