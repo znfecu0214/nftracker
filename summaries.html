@@ -26,7 +26,7 @@
             background: white;
             border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
+            /* overflow: hidden; REMOVED: This was blocking the sticky behavior */
         }
 
         .header {
@@ -35,6 +35,8 @@
             padding: 30px;
             text-align: center;
             position: relative;
+            /* ADDED: Manual border radius since container overflow is no longer hidden */
+            border-radius: 16px 16px 0 0;
         }
 
         .back-button {
@@ -135,13 +137,14 @@
         }
 
         .table-container {
-            overflow-x: auto;
+            /* overflow-x: auto; REMOVED: To allow sticky headers, we use the body scroll */
             padding: 30px;
         }
 
         table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate; /* Changed for better sticky border handling */
+            border-spacing: 0;
             font-size: 14px;
         }
 
@@ -156,6 +159,10 @@
             cursor: pointer;
             user-select: none;
             white-space: nowrap;
+            /* ADDED: Ensures header stays on top of content */
+            z-index: 10; 
+            /* ADDED: Visual separation when sticky */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
         }
 
         th:hover {
@@ -180,17 +187,18 @@
         td {
             padding: 12px 10px;
             border-bottom: 1px solid #e9ecef;
+            background: white; /* Ensure rows have background so they don't show through */
         }
 
-        tr:hover {
+        tr:hover td {
             background: #f8f9fa;
         }
 
-        tr:nth-child(even) {
+        tr:nth-child(even) td {
             background: #f8f9fa;
         }
 
-        tr:nth-child(even):hover {
+        tr:nth-child(even):hover td {
             background: #e9ecef;
         }
 
@@ -312,7 +320,8 @@
         }
 
         function sortTable(colIndex, headers) {
-            if (sortColumn === colIndex) {
+            // (Function unchanged)
+             if (sortColumn === colIndex) {
                 sortAsc = !sortAsc;
             } else {
                 sortColumn = colIndex;
@@ -325,7 +334,6 @@
                 let valA = a[header] || '';
                 let valB = b[header] || '';
 
-                // Remove thousand separators (commas) and try to parse as number
                 const cleanA = String(valA).replace(/,/g, '');
                 const cleanB = String(valB).replace(/,/g, '');
                 const numA = parseFloat(cleanA);
@@ -369,7 +377,6 @@
                 html += '<tr>';
                 headers.forEach(header => {
                     let value = row[header] || '';
-                    // Format percentages to 1 decimal place
                     if (header === '胜率' && value.includes('%')) {
                         const numValue = parseFloat(value.replace('%', ''));
                         if (!isNaN(numValue)) {
@@ -389,6 +396,7 @@
         }
 
         function sortTableClick(colIndex) {
+            // Re-using the logic from sortTable, but calling it directly
             const headers = Object.keys(filteredData[0]);
             if (sortColumn === colIndex) {
                 sortAsc = !sortAsc;
@@ -403,7 +411,6 @@
                 let valA = a[header] || '';
                 let valB = b[header] || '';
 
-                // Remove thousand separators (commas) and try to parse as number
                 const cleanA = String(valA).replace(/,/g, '');
                 const cleanB = String(valB).replace(/,/g, '');
                 const numA = parseFloat(cleanA);
