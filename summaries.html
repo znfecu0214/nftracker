@@ -368,7 +368,15 @@
             filteredData.forEach(row => {
                 html += '<tr>';
                 headers.forEach(header => {
-                    html += `<td>${row[header] || ''}</td>`;
+                    let value = row[header] || '';
+                    // Format percentages to 1 decimal place
+                    if (header === '胜率' && value.includes('%')) {
+                        const numValue = parseFloat(value.replace('%', ''));
+                        if (!isNaN(numValue)) {
+                            value = numValue.toFixed(1) + '%';
+                        }
+                    }
+                    html += `<td>${value}</td>`;
                 });
                 html += '</tr>';
             });
